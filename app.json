@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "sift",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "mv.villacollege.sift",

@@ -337,13 +337,17 @@ src/
 __tests__/                 Jest suites
 assets/demo/               26 bundled demo images
 assets/models/             precomputed CLIP label bank + sample-library embeddings
+test-photos/               42 CC-licensed photos to load into a device (SOURCES.json has attribution)
+docs/screenshots/          app screenshots used above
+docs/UserTesting_Report_Sift.pdf   user-testing report
+evidence/                  17 on-device screenshots from the user-testing sessions
 ```
 
 ---
 
 ## Testing
 
-`npm test` — 130 tests across eight suites, covering the logic that is easiest to
+`npm test` — 130 tests across nine suites, covering the logic that is easiest to
 get quietly wrong:
 
 | Suite | Covers |
@@ -361,6 +365,13 @@ get quietly wrong:
 Error handling was also exercised by hand on device and on web: denied photo
 permission, cancelling a scan mid-run, an empty index, a query with no results,
 a missing photo id, OCR with no key and with no network.
+
+**User testing.** Structured walkthrough sessions against a curated photo
+library (including deliberately planted duplicate copies as a ground truth) are
+documented in [`docs/UserTesting_Report_Sift.pdf`](docs/UserTesting_Report_Sift.pdf),
+with the 17 on-device screenshots captured during the sessions in
+[`evidence/`](evidence/). The sessions confirmed the core pipeline and surfaced
+the findings now listed under Known issues.
 
 ---
 
@@ -396,11 +407,25 @@ a missing photo id, OCR with no key and with no network.
   carry no information, so they are excluded from look-alike matching rather than
   allowed to match everything.
 - Demo videos use a still poster frame; the demo library ships images only.
+- Exact-copy duplicate detection compares dimensions and file size, so it finds
+  nothing until a deep scan (or fingerprinting) has recorded sizes — user
+  testing hit this cold. Look-alike matching catches the same copies once
+  fingerprints exist.
+- Without the CLIP model, "Find similar" falls back to fingerprint similarity;
+  user testing found the fallback can miss even a byte-identical copy that the
+  duplicates screen matches at 100% — under investigation.
+- Under extreme CPU starvation (an overloaded emulator host), writing a tag can
+  ANR and save truncated text; index writes should move off the UI thread.
 - Look-alike clustering is O(n²) over fingerprinted photos. It is comfortable at
   a few thousand, but would need bucketing beyond that.
 - Text extraction needs a network connection and a free third-party key.
 
 **Future improvements**
+- Fingerprint automatically after a scan, so the duplicates screen has something
+  to work with the first time it is opened (user testing found this is the single
+  biggest discoverability gap).
+- Suggest operator completions inline as the user types, so `is:` and `tag:` are
+  discoverable without first noticing the example queries on the Search tab.
 - An approximate nearest-neighbour index (IVF or HNSW) so semantic ranking scales
   past a few thousand photos per query.
 - A quantised text encoder — only the image encoder ships an int8 build today,
