@@ -1,0 +1,28 @@
+# Continuous integration for Sift.
+#
+# Everything here is exactly what a fresh clone runs locally:
+#   npm ci && npm run typecheck && npm test && npx expo lint
+# If these pass in CI they pass on your machine, and vice versa.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit and integration tests
+        run: npm test -- --ci
+      - name: Lint
+        run: npx expo lint
