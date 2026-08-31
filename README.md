@@ -102,8 +102,8 @@ build** — it cannot run inside Expo Go. Everything except live CLIP encoding
 also runs in Expo Go and in the browser.
 
 ```bash
-git clone <this-repo>
-cd mobileapp
+git clone https://github.com/sudo-mko/memory-manager.git
+cd memory-manager
 npm install
 
 npx expo prebuild --platform android   # generates ./android from app.json
@@ -162,7 +162,7 @@ search** (92 MB, plus 244 MB for typed queries).
 ### Other commands
 
 ```bash
-npm test           # 82 unit tests
+npm test           # 130 unit and integration tests
 npm run typecheck  # TypeScript, strict mode
 npm run lint
 ```
@@ -415,6 +415,40 @@ a missing photo id, OCR with no key and with no network.
 - Export a collection or a search result as a zip or a share sheet batch.
 - Reverse-geocoded place tags from photo GPS metadata.
 - A real bulk "delete from device" flow, with an explicit confirmation step.
+
+---
+
+## Reflection on the process
+
+The project started from a critique rather than a feature list: Tidy (the app it
+improves on) makes the user do the work of organising, and the interesting
+question was how much of that work the phone could do by itself. That framing
+drove every technical decision — SQLite over AsyncStorage because tags, notes
+and embeddings are relational; a query language because filters compose where
+checkboxes do not; on-device CLIP because semantic search is the one feature
+that genuinely removes manual filing.
+
+Three lessons stand out from the build:
+
+- **Plan for the platform you cannot test on.** The single hardest bug was an
+  uncatchable native crash (SIGILL) when running ML kernels inside an emulator
+  on an Apple-Silicon host. It could not be fixed, only detected and designed
+  around — which is why the sample library ships pre-computed embeddings, so
+  every feature demonstrates even where the model cannot run. Building the
+  fallback first would have saved days.
+- **Pure logic pays for its keep.** Everything that could be a pure function
+  (query parsing, SQL building, vector maths, tagging rules, hashing) lives in
+  `src/lib` and `src/services` with no React or native imports, which is what
+  makes 130 fast unit and integration tests possible. The parts that were
+  hardest to test were exactly the parts entangled with native modules.
+- **Honest degradation beats silent failure.** Expo Go cannot load the models,
+  emulators cannot run them, OCR needs a network — each of these states gets its
+  own explicit message in the UI. Writing those messages forced clearer thinking
+  about the feature boundaries than the happy path ever did.
+
+Given more time, the first improvement would be an approximate nearest-neighbour
+index, because it is the one scaling limit a real user with a 20,000-photo
+library would actually hit.
 
 ---
 
